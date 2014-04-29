@@ -24,4 +24,3 @@
  */
 
 $string['pluginname'] = 'Student activity overview';
-$string['cachedef_activitydata'] = 'Student Activity Data';
