@@ -24,3 +24,4 @@
  */
 
 $string['pluginname'] = 'Student activity overview';
+$string['studentactivity:view'] = 'View Student Activity Report';
