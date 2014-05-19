@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 class data
 {
     /** Types of data we store */
-    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "total");
+    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "total");
 
     /** Cache def */
     private $cache;
@@ -245,6 +245,29 @@ SQL;
      */
     public function wiki_count($courseid) {
         $counts = $this->wiki_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns choice edits counts by course.
+     */
+    public function choice_counts() {
+        $sql = <<<SQL
+        SELECT c.course, COUNT(ca.id) as cnt
+        FROM {choice_answers} ca
+        INNER JOIN {choice} c ON c.id=ca.choiceid
+        GROUP BY c.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("choice_counts", $sql);
+    }
+
+    /**
+     * Returns choice edits counts for a course
+     */
+    public function choice_count($courseid) {
+        $counts = $this->choice_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
