@@ -89,40 +89,12 @@ $table->attributes = array('class' => 'admintable studentactivityreport generalt
 $table->id = 'studentactivityreporttable';
 $table->data  = array();
 
+$core = new \report_studentactivity\data();
+
 $sql = <<<SQL
-	SELECT c.id, c.shortname,
-	       COALESCE(quiz.cnt, 0) as quizcnt,
-	       COALESCE(forum.cnt, 0) as forumcnt,
-	       COALESCE(turnitin.cnt, 0) as turnitincnt,
-	       (COALESCE(quiz.cnt, 0) + COALESCE(forum.cnt, 0) + COALESCE(turnitin.cnt, 0)) as totalcnt
-
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
-
-	# First, join in total number of quiz submissions
-	LEFT OUTER JOIN (
-		SELECT q.course, COUNT(qa.id) cnt
-		FROM {quiz_attempts} qa
-		INNER JOIN {quiz} q ON q.id=qa.quiz
-		GROUP BY q.course
-	) quiz ON quiz.course=c.id
-
-	# Then, join in total number of forum posts
-	LEFT OUTER JOIN (
-		SELECT f.course, COUNT(fp.id) cnt
-		FROM {forum_posts} fp
-		INNER JOIN {forum_discussions} fd ON fd.id=fp.discussion
-		INNER JOIN {forum} f ON f.id=fd.forum
-		GROUP BY f.course
-	) forum ON forum.course=c.id
-
-	# Finally, join in turnitintool submissions
-	LEFT OUTER JOIN (
-		SELECT t.course, COUNT(ts.id) cnt
-		FROM {turnitintool_submissions} ts
-		INNER JOIN {turnitintool} t ON t.id=ts.turnitintoolid
-		GROUP BY t.course
-	) turnitin ON turnitin.course=c.id
+    SELECT c.id, c.shortname
+    FROM {course} c
+    INNER JOIN {course_categories} cc ON cc.id=c.category
 SQL;
 
 $params = array();
@@ -132,7 +104,7 @@ if ($category !== 0) {
     $params['catb'] = "%/" . $category;
 }
 
-$sql .= " ORDER BY {$sort}cnt DESC";
+$sql .= " ORDER BY c.shortname DESC";
 
 $rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
 foreach ($rows as $row) {
@@ -141,15 +113,21 @@ foreach ($rows as $row) {
         'target' => '_blank'
     )));
 
-    $table->data[] = array($course, $row->quizcnt, $row->forumcnt, $row->turnitincnt, $row->totalcnt);
+    $table->data[] = array(
+        $course,
+        $core->qa_count($row->id),
+        $core->fp_count($row->id),
+        $core->ts_count($row->id),
+        $core->total_count($row->id)
+    );
 }
 
 echo html_writer::table($table);
 
 $totalsql = <<<SQL
-	SELECT COUNT(c.id) as count
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
+    SELECT COUNT(c.id) as count
+    FROM {course} c
+    INNER JOIN {course_categories} cc ON cc.id=c.category
 SQL;
 if ($category !== 0) {
     $totalsql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
