@@ -9,3 +9,4 @@ Report for student activity on:
  - OuWiki
  - mod_choice
  - questionnaire
+ - assignment
