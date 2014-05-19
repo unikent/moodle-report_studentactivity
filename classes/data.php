@@ -56,6 +56,11 @@ class data
     public function get_courses() {
         global $DB;
 
+        $result = $this->cache->get("courses");
+        if ($result !== false) {
+            return $result;
+        }
+
         $sql = "SELECT c.id, c.shortname FROM {course} c";
 
         $params = array();
@@ -84,6 +89,8 @@ class data
 
             $courses[] = $row;
         }
+
+        $this->cache->set("courses", $courses);
 
         return $courses;
     }
