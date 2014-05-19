@@ -8,3 +8,4 @@ Report for student activity on:
  - SCORM
  - OuWiki
  - mod_choice
+ - questionnaire

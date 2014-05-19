@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 class data
 {
     /** Types of data we store */
-    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "total");
+    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "questionnaire", "total");
 
     /** Cache def */
     private $cache;
@@ -224,7 +224,7 @@ SQL;
     }
 
     /**
-     * Returns wiki edits counts by course.
+     * Returns wiki edit counts by course.
      */
     public function wiki_counts() {
         $sql = <<<SQL
@@ -241,7 +241,7 @@ SQL;
     }
 
     /**
-     * Returns wiki edits counts for a course
+     * Returns wiki edit counts for a course
      */
     public function wiki_count($courseid) {
         $counts = $this->wiki_counts();
@@ -249,7 +249,7 @@ SQL;
     }
 
     /**
-     * Returns choice edits counts by course.
+     * Returns choice edit counts by course.
      */
     public function choice_counts() {
         $sql = <<<SQL
@@ -264,10 +264,33 @@ SQL;
     }
 
     /**
-     * Returns choice edits counts for a course
+     * Returns choice edit counts for a course
      */
     public function choice_count($courseid) {
         $counts = $this->choice_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns questionnaire response counts by course.
+     */
+    public function questionnaire_counts() {
+        $sql = <<<SQL
+        SELECT q.course, COUNT(qr.id) as cnt
+        FROM {questionnaire_response} qr
+        INNER JOIN {questionnaire} q ON q.sid=qr.survey_id
+        GROUP BY q.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("questionnaire_counts", $sql);
+    }
+
+    /**
+     * Returns questionnaire response counts for a course
+     */
+    public function questionnaire_count($courseid) {
+        $counts = $this->questionnaire_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
