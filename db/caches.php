@@ -28,6 +28,8 @@ defined('MOODLE_INTERNAL') || die();
 $definitions = array(
     'sareportdata' => array(
         'mode' => cache_store::MODE_APPLICATION,
-        'ttl'  => 3600 // Cache for 1 hour.
+        'ttl'  => 3600, // Cache for 1 hour.
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 12
     )
 );
