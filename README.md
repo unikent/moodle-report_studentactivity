@@ -7,3 +7,4 @@ Report for student activity on:
  - Turnitin
  - SCORM
  - OuWiki
+ - mod_choice
