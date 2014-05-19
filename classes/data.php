@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 class data
 {
     /** Types of data we store */
-    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "questionnaire", "total");
+    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "questionnaire", "assignment", "total");
 
     /** Cache def */
     private $cache;
@@ -291,6 +291,29 @@ SQL;
      */
     public function questionnaire_count($courseid) {
         $counts = $this->questionnaire_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns assignment submission counts by course.
+     */
+    public function assignment_counts() {
+        $sql = <<<SQL
+        SELECT ma.course, COUNT(mas.id) as cnt
+        FROM {assign_submission} mas
+        INNER JOIN {assign} ma ON ma.id=mas.assignment
+        GROUP BY ma.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("assignment_counts", $sql);
+    }
+
+    /**
+     * Returns assignment submission counts for a course
+     */
+    public function assignment_count($courseid) {
+        $counts = $this->assignment_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
