@@ -101,7 +101,7 @@ $sql = <<<SQL
 
 	# First, join in total number of quiz submissions
 	LEFT OUTER JOIN (
-		SELECT q.course, COUNT(q.id) cnt
+		SELECT q.course, COUNT(qa.id) cnt
 		FROM {quiz_attempts} qa
 		INNER JOIN {quiz} q ON q.id=qa.quiz
 		GROUP BY q.course
