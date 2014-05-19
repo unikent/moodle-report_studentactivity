@@ -25,6 +25,12 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2014050900;
+$plugin->version   = 2014052000;
 $plugin->requires  = 2013110500;
 $plugin->component = 'report_studentactivity';
+
+$plugin->dependencies = array(
+    'mod_turnitintool' => 2014043000,
+    'mod_ouwiki' => 2014052000,
+    'mod_choice' => 2013110500
+);

@@ -32,7 +32,7 @@ $page    = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 25, PARAM_INT);
 $category = optional_param('category', 0, PARAM_INT);
 $sort    = optional_param('sort', 'total', PARAM_ALPHA);
-if ($sort !== 'total' && $sort !== 'quiz' && $sort !== 'forum' && $sort !== 'turnitin') {
+if (!in_array($sort, \report_studentactivity\data::$types)) {
     $sort = 'total';
 }
 
@@ -64,15 +64,14 @@ echo html_writer::select($select, 'category', $category);
 // Setup the table.
 $table = new html_table();
 
-$columns = array(
-    "quiz" => "Quiz Attempts",
-    "forum" => "Forum Posts",
-    "turnitin" => "Turnitin Submissions",
-    "total" => "Total Activity"
-);
+$columns = array();
+foreach (\report_studentactivity\data::$types as $type) {
+    $columns[$type] = get_string("type_{$type}", 'report_studentactivity');
+}
 $columnicon = " <img src=\"" . $OUTPUT->pix_url('t/down') . "\" alt=\"Down Arrow\" />";
 
-$table->head  = array("Course");
+$table->head  = array('Course');
+$table->colclasses = array('mdl-left course');
 foreach ($columns as $name => $column) {
     if ($sort == $name) {
         $table->head[] = $column . $columnicon;
@@ -82,77 +81,58 @@ foreach ($columns as $name => $column) {
     $table->head[] = \html_writer::tag('a', $column, array(
         'href' => $baseurl->out(false, array('sort' => $name))
     ));
+
+    $table->colclasses[] = "mdl-left col_{$name}";
 }
 
-$table->colclasses = array('mdl-left course', 'mdl-left quiz', 'mdl-left forum', 'mdl-left turnitin', 'mdl-left total');
 $table->attributes = array('class' => 'admintable studentactivityreport generaltable');
 $table->id = 'studentactivityreporttable';
 $table->data  = array();
 
-$sql = <<<SQL
-	SELECT c.id, c.shortname,
-	       COALESCE(quiz.cnt, 0) as quizcnt,
-	       COALESCE(forum.cnt, 0) as forumcnt,
-	       COALESCE(turnitin.cnt, 0) as turnitincnt,
-	       (COALESCE(quiz.cnt, 0) + COALESCE(forum.cnt, 0) + COALESCE(turnitin.cnt, 0)) as totalcnt
+$core = new \report_studentactivity\data();
 
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
-
-	# First, join in total number of quiz submissions
-	LEFT OUTER JOIN (
-		SELECT q.course, COUNT(q.id) cnt
-		FROM {quiz_attempts} qa
-		INNER JOIN {quiz} q ON q.id=qa.quiz
-		GROUP BY q.course
-	) quiz ON quiz.course=c.id
-
-	# Then, join in total number of forum posts
-	LEFT OUTER JOIN (
-		SELECT f.course, COUNT(fp.id) cnt
-		FROM {forum_posts} fp
-		INNER JOIN {forum_discussions} fd ON fd.id=fp.discussion
-		INNER JOIN {forum} f ON f.id=fd.forum
-		GROUP BY f.course
-	) forum ON forum.course=c.id
-
-	# Finally, join in turnitintool submissions
-	LEFT OUTER JOIN (
-		SELECT t.course, COUNT(ts.id) cnt
-		FROM {turnitintool_submissions} ts
-		INNER JOIN {turnitintool} t ON t.id=ts.turnitintoolid
-		GROUP BY t.course
-	) turnitin ON turnitin.course=c.id
-SQL;
-
-$params = array();
 if ($category !== 0) {
-    $sql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
-    $params['cata'] = "%/" . $category . "/%";
-    $params['catb'] = "%/" . $category;
+    $core->set_category($category);
 }
 
-$sql .= " ORDER BY {$sort}cnt DESC";
+$courses = $core->get_courses();
 
-$rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
-foreach ($rows as $row) {
-    $course = new \html_table_cell(\html_writer::tag('a', $row->shortname, array(
-        'href' => $CFG->wwwroot . '/course/view.php?id=' . $row->id,
+// Ordering.
+usort($courses, function($a, $b) use ($sort) {
+    $var = "{$sort}_count";
+    return $a->$var < $b->$var;
+});
+
+$courses = array_slice($courses, $page * $perpage, $perpage);
+
+foreach ($courses as $course) {
+    $cell = new \html_table_cell(\html_writer::tag('a', $course->shortname, array(
+        'href' => $CFG->wwwroot . '/course/view.php?id=' . $course->id,
         'target' => '_blank'
     )));
 
-    $table->data[] = array($course, $row->quizcnt, $row->forumcnt, $row->turnitincnt, $row->totalcnt);
+    $data = array($cell);
+    foreach (\report_studentactivity\data::$types as $type) {
+        $var = "{$type}_count";
+        $data[] = $course->$var;
+    }
+
+    $table->data[] = $data;
 }
 
 echo html_writer::table($table);
 
 $totalsql = <<<SQL
-	SELECT COUNT(c.id) as count
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
+    SELECT COUNT(c.id) as count
+    FROM {course} c
 SQL;
+$params = array();
+
 if ($category !== 0) {
+    $totalsql .= " INNER JOIN {course_categories} cc ON cc.id=c.category";
     $totalsql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
+    $params['cata'] = "%/" . $this->category . "/%";
+    $params['catb'] = "%/" . $this->category;
 }
 $total = $DB->count_records_sql($totalsql, $params);
 
