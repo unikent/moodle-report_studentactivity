@@ -85,7 +85,8 @@ class data
             $row->qa_count = $this->qa_count($row->id);
             $row->fp_count = $this->fp_count($row->id);
             $row->ts_count = $this->ts_count($row->id);
-            $row->total_count = $row->qa_count + $row->fp_count + $row->ts_count;
+            $row->scorm_count = $this->scorm_count($row->id);
+            $row->total_count = $row->qa_count + $row->fp_count + $row->ts_count + $row->scorm_count;
 
             $courses[] = $row;
         }
@@ -182,6 +183,33 @@ SQL;
      */
     public function ts_count($courseid) {
         $counts = $this->ts_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns scorm attempt counts by course.
+     */
+    public function scorm_counts() {
+        $sql = <<<SQL
+        SELECT s.course, SUM(sst.attempts) as cnt
+        FROM {scorm} s
+        INNER JOIN (
+            SELECT userid,scormid,MAX(attempt) attempts
+            FROM {scorm_scoes_track}
+            GROUP BY userid,scormid
+        ) sst ON sst.scormid = s.id
+        GROUP BY s.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("scorm_counts", $sql);
+    }
+
+    /**
+     * Returns scorm attempt counts for a course
+     */
+    public function scorm_count($courseid) {
+        $counts = $this->scorm_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
