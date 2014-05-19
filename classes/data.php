@@ -85,11 +85,18 @@ class data
                 continue;
             }
 
-            $row->quiz_count = $this->quiz_count($row->id);
-            $row->forum_count = $this->forum_count($row->id);
-            $row->turnitin_count = $this->turnitin_count($row->id);
-            $row->scorm_count = $this->scorm_count($row->id);
-            $row->total_count = $row->quiz_count + $row->forum_count + $row->turnitin_count + $row->scorm_count;
+            $total = 0;
+            foreach (static::$types as $type) {
+                if ($type == "total") {
+                    continue;
+                }
+
+                $ref = "{$type}_count";
+                $row->$ref = $this->$ref($row->id);
+                $total += $row->$ref;
+            }
+
+            $row->total_count = $total;
 
             $courses[] = $row;
         }
