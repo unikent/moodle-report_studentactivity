@@ -29,6 +29,9 @@ defined('MOODLE_INTERNAL') || die();
 
 class data
 {
+    /** Types of data we store */
+    public static $types = array("quiz", "forum", "turnitin", "scorm", "total");
+
     /** Cache def */
     private $cache;
 
@@ -82,10 +85,18 @@ class data
                 continue;
             }
 
-            $row->qa_count = $this->qa_count($row->id);
-            $row->fp_count = $this->fp_count($row->id);
-            $row->ts_count = $this->ts_count($row->id);
-            $row->total_count = $row->qa_count + $row->fp_count + $row->ts_count;
+            $total = 0;
+            foreach (static::$types as $type) {
+                if ($type == "total") {
+                    continue;
+                }
+
+                $ref = "{$type}_count";
+                $row->$ref = $this->$ref($row->id);
+                $total += $row->$ref;
+            }
+
+            $row->total_count = $total;
 
             $courses[] = $row;
         }
@@ -118,7 +129,7 @@ class data
     /**
      * Returns quiz attempt counts by course.
      */
-    public function qa_counts() {
+    public function quiz_counts() {
         $sql = <<<SQL
         SELECT q.course, COUNT(qa.id) cnt
         FROM {quiz_attempts} qa
@@ -127,21 +138,21 @@ class data
         ORDER BY cnt DESC
 SQL;
 
-        return $this->grab_data("qa_counts", $sql);
+        return $this->grab_data("quiz_counts", $sql);
     }
 
     /**
      * Returns quiz attempt counts for a course
      */
-    public function qa_count($courseid) {
-        $counts = $this->qa_counts();
+    public function quiz_count($courseid) {
+        $counts = $this->quiz_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
     /**
      * Returns forum post counts by course.
      */
-    public function fp_counts() {
+    public function forum_counts() {
         $sql = <<<SQL
         SELECT f.course, COUNT(fp.id) cnt
         FROM {forum_posts} fp
@@ -151,21 +162,21 @@ SQL;
         ORDER BY cnt DESC
 SQL;
 
-        return $this->grab_data("fp_counts", $sql);
+        return $this->grab_data("forum_counts", $sql);
     }
 
     /**
      * Returns forum post counts for a course
      */
-    public function fp_count($courseid) {
-        $counts = $this->fp_counts();
+    public function forum_count($courseid) {
+        $counts = $this->forum_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
     /**
      * Returns turnitin submission counts by course.
      */
-    public function ts_counts() {
+    public function turnitin_counts() {
         $sql = <<<SQL
         SELECT t.course, COUNT(ts.id) cnt
         FROM {turnitintool_submissions} ts
@@ -174,14 +185,41 @@ SQL;
         ORDER BY cnt DESC
 SQL;
 
-        return $this->grab_data("ts_counts", $sql);
+        return $this->grab_data("turnitin_counts", $sql);
     }
 
     /**
      * Returns turnitin submission counts for a course
      */
-    public function ts_count($courseid) {
-        $counts = $this->ts_counts();
+    public function turnitin_count($courseid) {
+        $counts = $this->turnitin_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns scorm attempt counts by course.
+     */
+    public function scorm_counts() {
+        $sql = <<<SQL
+        SELECT s.course, SUM(sst.attempts) as cnt
+        FROM {scorm} s
+        INNER JOIN (
+            SELECT userid,scormid,MAX(attempt) attempts
+            FROM {scorm_scoes_track}
+            GROUP BY userid,scormid
+        ) sst ON sst.scormid = s.id
+        GROUP BY s.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("scorm_counts", $sql);
+    }
+
+    /**
+     * Returns scorm attempt counts for a course
+     */
+    public function scorm_count($courseid) {
+        $counts = $this->scorm_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
