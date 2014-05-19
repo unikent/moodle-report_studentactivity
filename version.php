@@ -25,6 +25,6 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version   = 2014050900;
+$plugin->version   = 2014051900;
 $plugin->requires  = 2013110500;
 $plugin->component = 'report_studentactivity';
