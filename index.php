@@ -96,6 +96,25 @@ if ($category !== 0) {
 }
 
 $courses = $core->get_courses();
+
+// Ordering.
+usort($courses, function($a, $b) use ($sort) {
+    switch ($sort) {
+        case "quiz":
+        return $a->qa_cnt < $b->qa_cnt;
+
+        case "forum":
+        return $a->fp_count < $b->fp_count;
+
+        case "turnitin":
+        return $a->ts_cnt < $b->ts_cnt;
+
+        case "total":
+        default:
+        return $a->total_count < $b->total_count;
+    }
+});
+
 $courses = array_slice($courses, $page * $perpage, $perpage);
 
 foreach ($courses as $course) {
