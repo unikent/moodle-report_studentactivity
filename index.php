@@ -91,34 +91,25 @@ $table->data  = array();
 
 $core = new \report_studentactivity\data();
 
-$sql = <<<SQL
-    SELECT c.id, c.shortname
-    FROM {course} c
-    INNER JOIN {course_categories} cc ON cc.id=c.category
-SQL;
-
-$params = array();
 if ($category !== 0) {
-    $sql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
-    $params['cata'] = "%/" . $category . "/%";
-    $params['catb'] = "%/" . $category;
+    $core->set_category($category);
 }
 
-$sql .= " ORDER BY c.shortname DESC";
+$courses = $core->get_courses();
+$courses = array_slice($courses, $page * $perpage, $perpage);
 
-$rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
-foreach ($rows as $row) {
-    $course = new \html_table_cell(\html_writer::tag('a', $row->shortname, array(
-        'href' => $CFG->wwwroot . '/course/view.php?id=' . $row->id,
+foreach ($courses as $course) {
+    $cell = new \html_table_cell(\html_writer::tag('a', $course->shortname, array(
+        'href' => $CFG->wwwroot . '/course/view.php?id=' . $course->id,
         'target' => '_blank'
     )));
 
     $table->data[] = array(
-        $course,
-        $core->qa_count($row->id),
-        $core->fp_count($row->id),
-        $core->ts_count($row->id),
-        $core->total_count($row->id)
+        $cell,
+        $course->qa_count,
+        $course->fp_count,
+        $course->ts_count,
+        $course->total_count
     );
 }
 
@@ -127,10 +118,14 @@ echo html_writer::table($table);
 $totalsql = <<<SQL
     SELECT COUNT(c.id) as count
     FROM {course} c
-    INNER JOIN {course_categories} cc ON cc.id=c.category
 SQL;
+$params = array();
+
 if ($category !== 0) {
+    $totalsql .= " INNER JOIN {course_categories} cc ON cc.id=c.category";
     $totalsql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
+    $params['cata'] = "%/" . $this->category . "/%";
+    $params['catb'] = "%/" . $this->category;
 }
 $total = $DB->count_records_sql($totalsql, $params);
 

@@ -32,11 +32,60 @@ class data
     /** Cache def */
     private $cache;
 
+    /** Course category */
+    private $category;
+
     /**
      * Constructor
      */
     public function __construct() {
         $this->cache = \cache::make('report_studentactivity', 'sareportdata');
+    }
+
+    /**
+     * Sets the course category.
+     */
+    public function set_category($id) {
+        $this->category = $id;
+    }
+
+    /**
+     * Returns a list of courses, with count
+     * data attached.
+     */
+    public function get_courses() {
+        global $DB;
+
+        $sql = "SELECT c.id, c.shortname FROM {course} c";
+
+        $params = array();
+        if (isset($this->category)) {
+            $sql .= " INNER JOIN {course_categories} cc ON cc.id=c.category";
+            $sql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
+            $params['cata'] = "%/" . $this->category . "/%";
+            $params['catb'] = "%/" . $this->category;
+        }
+
+        $sql .= " ORDER BY c.shortname DESC";
+
+        $rows = $DB->get_records_sql($sql, $params);
+
+        // Build courses.
+        $courses = array();
+        foreach ($rows as $row) {
+            if ($row->id === '1') {
+                continue;
+            }
+
+            $row->qa_count = $this->qa_count($row->id);
+            $row->fp_count = $this->fp_count($row->id);
+            $row->ts_count = $this->ts_count($row->id);
+            $row->total_count = $row->qa_count + $row->fp_count + $row->ts_count;
+
+            $courses[] = $row;
+        }
+
+        return $courses;
     }
 
     /**
@@ -79,7 +128,7 @@ SQL;
      */
     public function qa_count($courseid) {
         $counts = $this->qa_counts();
-        return $counts[$courseid];
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
     /**
@@ -103,7 +152,7 @@ SQL;
      */
     public function fp_count($courseid) {
         $counts = $this->fp_counts();
-        return $counts[$courseid];
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
     /**
@@ -126,13 +175,6 @@ SQL;
      */
     public function ts_count($courseid) {
         $counts = $this->ts_counts();
-        return $counts[$courseid];
-    }
-
-    /**
-     * Returns total counts for a course
-     */
-    public function total_count($courseid) {
-        return $this->qa_count($courseid) + $this->fp_count($courseid) + $this->ts_count($courseid);
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
