@@ -32,7 +32,7 @@ $page    = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 25, PARAM_INT);
 $category = optional_param('category', 0, PARAM_INT);
 $sort    = optional_param('sort', 'total', PARAM_ALPHA);
-if ($sort !== 'total' && $sort !== 'quiz' && $sort !== 'forum' && $sort !== 'turnitin') {
+if (!in_array($sort, \report_studentactivity\data::$types)) {
     $sort = 'total';
 }
 
@@ -64,15 +64,14 @@ echo html_writer::select($select, 'category', $category);
 // Setup the table.
 $table = new html_table();
 
-$columns = array(
-    "quiz" => "Quiz Attempts",
-    "forum" => "Forum Posts",
-    "turnitin" => "Turnitin Submissions",
-    "total" => "Total Activity"
-);
+$columns = array();
+foreach (\report_studentactivity\data::$types as $type) {
+    $columns[$type] = get_string("type_{$type}", 'report_studentactivity');
+}
 $columnicon = " <img src=\"" . $OUTPUT->pix_url('t/down') . "\" alt=\"Down Arrow\" />";
 
-$table->head  = array("Course");
+$table->head  = array('Course');
+$table->colclasses = array('mdl-left course');
 foreach ($columns as $name => $column) {
     if ($sort == $name) {
         $table->head[] = $column . $columnicon;
@@ -82,9 +81,10 @@ foreach ($columns as $name => $column) {
     $table->head[] = \html_writer::tag('a', $column, array(
         'href' => $baseurl->out(false, array('sort' => $name))
     ));
+
+    $table->colclasses[] = "mdl-left col_{$name}";
 }
 
-$table->colclasses = array('mdl-left course', 'mdl-left quiz', 'mdl-left forum', 'mdl-left turnitin', 'mdl-left total');
 $table->attributes = array('class' => 'admintable studentactivityreport generaltable');
 $table->id = 'studentactivityreporttable';
 $table->data  = array();
@@ -99,20 +99,8 @@ $courses = $core->get_courses();
 
 // Ordering.
 usort($courses, function($a, $b) use ($sort) {
-    switch ($sort) {
-        case "quiz":
-        return $a->qa_cnt < $b->qa_cnt;
-
-        case "forum":
-        return $a->fp_count < $b->fp_count;
-
-        case "turnitin":
-        return $a->ts_cnt < $b->ts_cnt;
-
-        case "total":
-        default:
-        return $a->total_count < $b->total_count;
-    }
+    $var = "{$sort}_count";
+    return $a->$var < $b->$var;
 });
 
 $courses = array_slice($courses, $page * $perpage, $perpage);
@@ -123,13 +111,13 @@ foreach ($courses as $course) {
         'target' => '_blank'
     )));
 
-    $table->data[] = array(
-        $cell,
-        $course->qa_count,
-        $course->fp_count,
-        $course->ts_count,
-        $course->total_count
-    );
+    $data = array($cell);
+    foreach (\report_studentactivity\data::$types as $type) {
+        $var = "{$type}_count";
+        $data[] = $course->$var;
+    }
+
+    $table->data[] = $data;
 }
 
 echo html_writer::table($table);
