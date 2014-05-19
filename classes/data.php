@@ -30,7 +30,7 @@ defined('MOODLE_INTERNAL') || die();
 class data
 {
     /** Types of data we store */
-    public static $types = array("quiz", "forum", "turnitin", "scorm", "total");
+    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "total");
 
     /** Cache def */
     private $cache;
@@ -220,6 +220,31 @@ SQL;
      */
     public function scorm_count($courseid) {
         $counts = $this->scorm_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns wiki edits counts by course.
+     */
+    public function wiki_counts() {
+        $sql = <<<SQL
+        SELECT o.course, COUNT(ov.id) as cnt
+        FROM {ouwiki_versions} ov
+        INNER JOIN {ouwiki_pages} op ON op.id=ov.pageid
+        INNER JOIN {ouwiki_subwikis} os ON os.id=op.subwikiid
+        INNER JOIN {ouwiki} o ON o.id=os.wikiid
+        GROUP BY o.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("wiki_counts", $sql);
+    }
+
+    /**
+     * Returns wiki edits counts for a course
+     */
+    public function wiki_count($courseid) {
+        $counts = $this->wiki_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 }
