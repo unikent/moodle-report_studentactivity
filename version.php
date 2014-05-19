@@ -30,5 +30,6 @@ $plugin->requires  = 2013110500;
 $plugin->component = 'report_studentactivity';
 
 $plugin->dependencies = array(
-    'mod_turnitintool' => 2014043000
+    'mod_turnitintool' => 2014043000,
+    'mod_ouwiki' => 2014052000
 );
