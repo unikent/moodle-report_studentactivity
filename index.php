@@ -89,70 +89,62 @@ $table->attributes = array('class' => 'admintable studentactivityreport generalt
 $table->id = 'studentactivityreporttable';
 $table->data  = array();
 
-$sql = <<<SQL
-	SELECT c.id, c.shortname,
-	       COALESCE(quiz.cnt, 0) as quizcnt,
-	       COALESCE(forum.cnt, 0) as forumcnt,
-	       COALESCE(turnitin.cnt, 0) as turnitincnt,
-	       (COALESCE(quiz.cnt, 0) + COALESCE(forum.cnt, 0) + COALESCE(turnitin.cnt, 0)) as totalcnt
+$core = new \report_studentactivity\data();
 
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
-
-	# First, join in total number of quiz submissions
-	LEFT OUTER JOIN (
-		SELECT q.course, COUNT(q.id) cnt
-		FROM {quiz_attempts} qa
-		INNER JOIN {quiz} q ON q.id=qa.quiz
-		GROUP BY q.course
-	) quiz ON quiz.course=c.id
-
-	# Then, join in total number of forum posts
-	LEFT OUTER JOIN (
-		SELECT f.course, COUNT(fp.id) cnt
-		FROM {forum_posts} fp
-		INNER JOIN {forum_discussions} fd ON fd.id=fp.discussion
-		INNER JOIN {forum} f ON f.id=fd.forum
-		GROUP BY f.course
-	) forum ON forum.course=c.id
-
-	# Finally, join in turnitintool submissions
-	LEFT OUTER JOIN (
-		SELECT t.course, COUNT(ts.id) cnt
-		FROM {turnitintool_submissions} ts
-		INNER JOIN {turnitintool} t ON t.id=ts.turnitintoolid
-		GROUP BY t.course
-	) turnitin ON turnitin.course=c.id
-SQL;
-
-$params = array();
 if ($category !== 0) {
-    $sql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
-    $params['cata'] = "%/" . $category . "/%";
-    $params['catb'] = "%/" . $category;
+    $core->set_category($category);
 }
 
-$sql .= " ORDER BY {$sort}cnt DESC";
+$courses = $core->get_courses();
 
-$rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
-foreach ($rows as $row) {
-    $course = new \html_table_cell(\html_writer::tag('a', $row->shortname, array(
-        'href' => $CFG->wwwroot . '/course/view.php?id=' . $row->id,
+// Ordering.
+usort($courses, function($a, $b) use ($sort) {
+    switch ($sort) {
+        case "quiz":
+        return $a->qa_cnt < $b->qa_cnt;
+
+        case "forum":
+        return $a->fp_count < $b->fp_count;
+
+        case "turnitin":
+        return $a->ts_cnt < $b->ts_cnt;
+
+        case "total":
+        default:
+        return $a->total_count < $b->total_count;
+    }
+});
+
+$courses = array_slice($courses, $page * $perpage, $perpage);
+
+foreach ($courses as $course) {
+    $cell = new \html_table_cell(\html_writer::tag('a', $course->shortname, array(
+        'href' => $CFG->wwwroot . '/course/view.php?id=' . $course->id,
         'target' => '_blank'
     )));
 
-    $table->data[] = array($course, $row->quizcnt, $row->forumcnt, $row->turnitincnt, $row->totalcnt);
+    $table->data[] = array(
+        $cell,
+        $course->qa_count,
+        $course->fp_count,
+        $course->ts_count,
+        $course->total_count
+    );
 }
 
 echo html_writer::table($table);
 
 $totalsql = <<<SQL
-	SELECT COUNT(c.id) as count
-	FROM {course} c
-	INNER JOIN {course_categories} cc ON cc.id=c.category
+    SELECT COUNT(c.id) as count
+    FROM {course} c
 SQL;
+$params = array();
+
 if ($category !== 0) {
+    $totalsql .= " INNER JOIN {course_categories} cc ON cc.id=c.category";
     $totalsql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
+    $params['cata'] = "%/" . $this->category . "/%";
+    $params['catb'] = "%/" . $this->category;
 }
 $total = $DB->count_records_sql($totalsql, $params);
 

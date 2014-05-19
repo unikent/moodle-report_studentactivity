@@ -15,14 +15,21 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Lang strings
+ * Cache definitions
  *
  * @package    report
- * @subpackage studentactivity
+ * @subpackage filesize
  * @copyright  2014 University of Kent
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname'] = 'Student activity overview';
-$string['studentactivity:view'] = 'View Student Activity Report';
-$string['cachedef_sareportdata'] = 'Student Activity Report Data';
+defined('MOODLE_INTERNAL') || die();
+
+$definitions = array(
+    'sareportdata' => array(
+        'mode' => cache_store::MODE_APPLICATION,
+        'ttl'  => 3600, // Cache for 1 hour.
+        'staticacceleration' => true,
+        'staticaccelerationsize' => 12
+    )
+);
