@@ -131,8 +131,8 @@ $params = array();
 if ($category !== 0) {
     $totalsql .= " INNER JOIN {course_categories} cc ON cc.id=c.category";
     $totalsql .= " WHERE cc.path LIKE :cata OR cc.path LIKE :catb";
-    $params['cata'] = "%/" . $this->category . "/%";
-    $params['catb'] = "%/" . $this->category;
+    $params['cata'] = "%/" . $category . "/%";
+    $params['catb'] = "%/" . $category;
 }
 $total = $DB->count_records_sql($totalsql, $params);
 
