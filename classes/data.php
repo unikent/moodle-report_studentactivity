@@ -59,7 +59,12 @@ class data
     public function get_courses() {
         global $DB;
 
-        $result = $this->cache->get("courses");
+        $cachekey = "courses";
+        if (isset($this->category)) {
+            $cachekey .= "_{$this->category}";
+        }
+
+        $result = $this->cache->get($cachekey);
         if ($result !== false) {
             return $result;
         }
@@ -101,7 +106,7 @@ class data
             $courses[] = $row;
         }
 
-        $this->cache->set("courses", $courses);
+        $this->cache->set($cachekey, $courses);
 
         return $courses;
     }
