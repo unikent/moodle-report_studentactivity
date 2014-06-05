@@ -29,10 +29,11 @@ $string['cachedef_sareportdata'] = 'Student Activity Report Data';
 
 $string['type_quiz'] = 'Quiz Attempts';
 $string['type_forum'] = 'Forum Posts';
-$string['type_turnitin'] = 'Turnitin Submissions';
+$string['type_turnitintool'] = 'Turnitin Submissions';
+$string['type_turnitintooltwo'] = 'Turnitin 2 Submissions';
 $string['type_assignment'] = 'Assignment Submissions';
 $string['type_choice'] = 'Choice Responses';
-$string['type_wiki'] = 'Wiki Edits';
+$string['type_ouwiki'] = 'Wiki Edits';
 $string['type_questionnaire'] = 'Questionnaire Responses';
 $string['type_scorm'] = 'SCORM Attempts';
 $string['type_total'] = 'Total Activity';

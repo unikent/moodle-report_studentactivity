@@ -30,7 +30,9 @@ defined('MOODLE_INTERNAL') || die();
 class data
 {
     /** Types of data we store */
-    public static $types = array("quiz", "forum", "turnitin", "scorm", "wiki", "choice", "questionnaire", "assignment", "total");
+    private static $types = array(
+        "quiz", "forum", "turnitintool", "turnitintooltwo", "scorm", "ouwiki", "choice", "questionnaire", "assignment", "total"
+    );
 
     /** Cache def */
     private $cache;
@@ -43,6 +45,38 @@ class data
      */
     public function __construct() {
         $this->cache = \cache::make('report_studentactivity', 'sareportdata');
+    }
+
+    /**
+     * Returns available types
+     */
+    public static function get_types() {
+        static $types = array();
+
+        if (empty($types)) {
+            foreach (static::$types as $type) {
+                if (static::is_type_available($type)) {
+                    $types[] = $type;
+                }
+            }
+        }
+
+        return $types;
+    }
+
+    /**
+     * Returns true if a given type is available
+     */
+    public static function is_type_available($type) {
+        global $DB;
+
+        if ($type === 'total') {
+            return true;
+        }
+
+        return '1' === $DB->get_field('modules', 'visible', array(
+            "name" => $type
+        ));
     }
 
     /**
@@ -91,7 +125,7 @@ class data
             }
 
             $total = 0;
-            foreach (static::$types as $type) {
+            foreach (static::get_types() as $type) {
                 if ($type == "total") {
                     continue;
                 }
@@ -179,9 +213,9 @@ SQL;
     }
 
     /**
-     * Returns turnitin submission counts by course.
+     * Returns turnitintool submission counts by course.
      */
-    public function turnitin_counts() {
+    public function turnitintool_counts() {
         $sql = <<<SQL
         SELECT t.course, COUNT(ts.id) cnt
         FROM {turnitintool_submissions} ts
@@ -190,14 +224,37 @@ SQL;
         ORDER BY cnt DESC
 SQL;
 
-        return $this->grab_data("turnitin_counts", $sql);
+        return $this->grab_data("turnitintool_counts", $sql);
     }
 
     /**
-     * Returns turnitin submission counts for a course
+     * Returns turnitintool submission counts for a course
      */
-    public function turnitin_count($courseid) {
-        $counts = $this->turnitin_counts();
+    public function turnitintool_count($courseid) {
+        $counts = $this->turnitintool_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns turnitintool 2 submission counts by course.
+     */
+    public function turnitintooltwo_counts() {
+        $sql = <<<SQL
+        SELECT t.course, COUNT(ts.id) cnt
+        FROM {turnitintooltwo_submissions} ts
+        INNER JOIN {turnitintooltwo} t ON t.id=ts.turnitintooltwoid
+        GROUP BY t.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("turnitintooltwo_counts", $sql);
+    }
+
+    /**
+     * Returns turnitintool 2 submission counts for a course
+     */
+    public function turnitintooltwo_count($courseid) {
+        $counts = $this->turnitintooltwo_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
@@ -229,9 +286,9 @@ SQL;
     }
 
     /**
-     * Returns wiki edit counts by course.
+     * Returns ouwiki edit counts by course.
      */
-    public function wiki_counts() {
+    public function ouwiki_counts() {
         $sql = <<<SQL
         SELECT o.course, COUNT(ov.id) as cnt
         FROM {ouwiki_versions} ov
@@ -246,10 +303,10 @@ SQL;
     }
 
     /**
-     * Returns wiki edit counts for a course
+     * Returns ouwiki edit counts for a course
      */
-    public function wiki_count($courseid) {
-        $counts = $this->wiki_counts();
+    public function ouwiki_count($courseid) {
+        $counts = $this->ouwiki_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
