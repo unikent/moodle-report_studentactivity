@@ -68,6 +68,8 @@ class data
      * Returns true if a given type is available
      */
     public static function is_type_available($type) {
+        global $DB;
+
         if ($type === 'total') {
             return true;
         }
