@@ -31,7 +31,7 @@ class data
 {
     /** Types of data we store */
     private static $types = array(
-        "quiz", "forum", "turnitintool", "scorm", "ouwiki", "choice", "questionnaire", "assignment", "total"
+        "quiz", "forum", "turnitintool", "turnitintooltwo", "scorm", "ouwiki", "choice", "questionnaire", "assignment", "total"
     );
 
     /** Cache def */
@@ -230,6 +230,29 @@ SQL;
      */
     public function turnitintool_count($courseid) {
         $counts = $this->turnitintool_counts();
+        return isset($counts[$courseid]) ? $counts[$courseid] : 0;
+    }
+
+    /**
+     * Returns turnitintool 2 submission counts by course.
+     */
+    public function turnitintooltwo_counts() {
+        $sql = <<<SQL
+        SELECT t.course, COUNT(ts.id) cnt
+        FROM {turnitintooltwo_submissions} ts
+        INNER JOIN {turnitintooltwo} t ON t.id=ts.turnitintooltwoid
+        GROUP BY t.course
+        ORDER BY cnt DESC
+SQL;
+
+        return $this->grab_data("turnitintooltwo_counts", $sql);
+    }
+
+    /**
+     * Returns turnitintool 2 submission counts for a course
+     */
+    public function turnitintooltwo_count($courseid) {
+        $counts = $this->turnitintooltwo_counts();
         return isset($counts[$courseid]) ? $counts[$courseid] : 0;
     }
 
