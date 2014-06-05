@@ -32,7 +32,7 @@ $page    = optional_param('page', 0, PARAM_INT);
 $perpage = optional_param('perpage', 25, PARAM_INT);
 $category = optional_param('category', 0, PARAM_INT);
 $sort    = optional_param('sort', 'total', PARAM_ALPHA);
-if (!in_array($sort, \report_studentactivity\data::$types)) {
+if (!in_array($sort, \report_studentactivity\data::get_types())) {
     $sort = 'total';
 }
 
@@ -65,7 +65,7 @@ echo html_writer::select($select, 'category', $category);
 $table = new html_table();
 
 $columns = array();
-foreach (\report_studentactivity\data::$types as $type) {
+foreach (\report_studentactivity\data::get_types() as $type) {
     $columns[$type] = get_string("type_{$type}", 'report_studentactivity');
 }
 $columnicon = " <img src=\"" . $OUTPUT->pix_url('t/down') . "\" alt=\"Down Arrow\" />";
@@ -112,7 +112,7 @@ foreach ($courses as $course) {
     )));
 
     $data = array($cell);
-    foreach (\report_studentactivity\data::$types as $type) {
+    foreach (\report_studentactivity\data::get_types() as $type) {
         $var = "{$type}_count";
         $data[] = $course->$var;
     }
